@@ -48,7 +48,9 @@ This project builds a predictive model to identify toxic compounds early in the 
 ---
 ### **Future ScopeReal-time Visualization:**
 **1. Integrating interactive charts** to show relationships between molecular properties and toxicity.
+
 **2. Broader Databases:** Incorporating the ChEMBL Bioactivity Dataset for enhanced pharmacological insights.
+
 **3. Generative AI Integration**: Using AI to suggest structural modifications that reduce the toxicity of a candidate drug.
 
 ---
