@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Safe Synthesis - Toxicity Predictor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+  <div class="mx-auto max-w-3xl px-6 py-12">
+    <header class="mb-8 rounded-2xl border border-cyan-400/30 bg-slate-900/80 p-6 shadow-lg shadow-cyan-900/20">
+      <p class="mb-2 text-xs uppercase tracking-[0.25em] text-cyan-300">Modern Lab Interface</p>
+      <h1 class="text-3xl font-bold text-white">Toxicity Prediction Panel</h1>
+      <p class="mt-2 text-slate-300">
+        Enter a SMILES string and run a quick toxicity estimate.
+      </p>
+    </header>
+
+    <main class="space-y-6">
+      <section class="rounded-2xl border border-slate-700 bg-slate-900 p-6">
+        <label for="smilesInput" class="mb-2 block text-sm font-semibold text-cyan-200">
+          SMILES String
+        </label>
+        <div class="mb-3">
+          <label for="smilesPreset" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-400">
+            Quick Examples
+          </label>
+          <select
+            id="smilesPreset"
+            class="w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-2 text-sm text-slate-100 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30"
+          >
+            <option value="">Choose a preset SMILES...</option>
+            <option value="CCO">Ethanol (CCO)</option>
+            <option value="CC(=O)O">Acetic acid (CC(=O)O)</option>
+            <option value="c1ccccc1">Benzene (c1ccccc1)</option>
+            <option value="CCN(CC)CC">Triethylamine (CCN(CC)CC)</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <input
+            id="smilesInput"
+            type="text"
+            placeholder="Example: CCO"
+            class="w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-3 text-slate-100 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30"
+          />
+          <button
+            id="predictBtn"
+            class="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-6 py-3 font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span id="btnSpinner" class="hidden h-4 w-4 animate-spin rounded-full border-2 border-slate-950/40 border-t-slate-950"></span>
+            <span id="btnText">Predict</span>
+          </button>
+        </div>
+        <p id="message" class="mt-3 text-sm text-slate-300"></p>
+      </section>
+
+      <section class="rounded-2xl border border-slate-700 bg-slate-900 p-6">
+        <h2 class="mb-4 text-xl font-semibold text-white">Result</h2>
+
+        <div class="grid gap-4 sm:grid-cols-2">
+          <div class="rounded-xl border border-slate-700 bg-slate-800 p-4">
+            <p class="text-sm text-slate-300">Toxicity Score</p>
+            <p id="toxicityScore" class="mt-1 text-3xl font-bold text-white">-</p>
+            <p class="mt-1 text-xs text-slate-400">Range: 0.00 to 1.00</p>
+          </div>
+
+          <div id="riskCard" class="rounded-xl border border-slate-700 bg-slate-800 p-4">
+            <p class="text-sm text-slate-300">Risk Level</p>
+            <p id="riskLabel" class="mt-1 text-2xl font-bold text-white">-</p>
+          </div>
+        </div>
+
+        <div class="mt-5 flex flex-wrap items-center gap-3 text-sm">
+          <span class="rounded-full bg-green-500/20 px-3 py-1 text-green-300 ring-1 ring-green-400/40">Green: Low</span>
+          <span class="rounded-full bg-yellow-500/20 px-3 py-1 text-yellow-300 ring-1 ring-yellow-400/40">Yellow: Medium</span>
+          <span class="rounded-full bg-red-500/20 px-3 py-1 text-red-300 ring-1 ring-red-400/40">Red: High</span>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const smilesInput = document.getElementById("smilesInput");
+    const smilesPreset = document.getElementById("smilesPreset");
+    const predictBtn = document.getElementById("predictBtn");
+    const btnSpinner = document.getElementById("btnSpinner");
+    const btnText = document.getElementById("btnText");
+    const message = document.getElementById("message");
+    const toxicityScore = document.getElementById("toxicityScore");
+    const riskLabel = document.getElementById("riskLabel");
+    const riskCard = document.getElementById("riskCard");
+
+    function getRiskInfo(score) {
+      if (score < 0.33) {
+        return {
+          label: "Low",
+          cardClass: "border-green-400/60 bg-green-500/10",
+          textClass: "text-green-300"
+        };
+      }
+      if (score <= 0.66) {
+        return {
+          label: "Medium",
+          cardClass: "border-yellow-400/60 bg-yellow-500/10",
+          textClass: "text-yellow-300"
+        };
+      }
+      return {
+        label: "High",
+        cardClass: "border-red-400/60 bg-red-500/10",
+        textClass: "text-red-300"
+      };
+    }
+
+    async function predictToxicity() {
+      const smiles = smilesInput.value.trim();
+
+      if (!smiles) {
+        message.textContent = "Please enter a SMILES string first.";
+        message.className = "mt-3 text-sm text-yellow-300";
+        return;
+      }
+
+      predictBtn.disabled = true;
+      btnSpinner.classList.remove("hidden");
+      btnText.textContent = "Predicting...";
+      message.textContent = "";
+
+      try {
+        const response = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ smiles })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Prediction failed.");
+        }
+
+        const score = Number(data.toxicity_score);
+        const risk = getRiskInfo(score);
+
+        toxicityScore.textContent = score.toFixed(4);
+        riskLabel.textContent = risk.label;
+        riskLabel.className = "mt-1 text-2xl font-bold " + risk.textClass;
+        riskCard.className = "rounded-xl border p-4 " + risk.cardClass;
+
+        message.textContent = "Prediction completed successfully.";
+        message.className = "mt-3 text-sm text-cyan-300";
+      } catch (error) {
+        message.textContent = error.message;
+        message.className = "mt-3 text-sm text-red-300";
+      } finally {
+        predictBtn.disabled = false;
+        btnSpinner.classList.add("hidden");
+        btnText.textContent = "Predict";
+      }
+    }
+
+    smilesPreset.addEventListener("change", function () {
+      if (smilesPreset.value) {
+        smilesInput.value = smilesPreset.value;
+      }
+    });
+
+    smilesInput.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        predictToxicity();
+      }
+    });
+
+    predictBtn.addEventListener("click", predictToxicity);
+  </script>
+</body>
+</html>
