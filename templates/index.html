@@ -239,6 +239,20 @@
           </div>
         </div>
 
+        <div
+          id="suggestedAlternativeCard"
+          class="mt-6 rounded-xl border border-slate-600/70 bg-slate-800/35 p-5 shadow-sm"
+        >
+          <h3 class="text-sm font-semibold tracking-tight text-white">Suggested Alternative</h3>
+          <p
+            id="detailAlternative"
+            class="mt-3 max-w-2xl text-base leading-relaxed text-slate-300"
+            role="status"
+          >
+            —
+          </p>
+        </div>
+
         <div class="mt-5 flex flex-wrap items-center gap-3 text-sm">
           <span class="rounded-full bg-green-500/20 px-3 py-1 text-green-300 ring-1 ring-green-400/40">Green: Low</span>
           <span class="rounded-full bg-yellow-500/20 px-3 py-1 text-yellow-300 ring-1 ring-yellow-400/40">Yellow: Medium</span>
@@ -315,6 +329,16 @@
     const detailHBondDonors = document.getElementById("detailHBondDonors");
     const detailHBondAcceptors = document.getElementById("detailHBondAcceptors");
     const detailReason = document.getElementById("detailReason");
+    const detailAlternative = document.getElementById("detailAlternative");
+    const suggestedAlternativeCard = document.getElementById("suggestedAlternativeCard");
+
+    var suggestedAltCardNeutralClass =
+      "mt-6 rounded-xl border border-slate-600/70 bg-slate-800/35 p-5 shadow-sm";
+    var suggestedAltCardWarningClass =
+      "mt-6 rounded-xl border border-amber-500/45 bg-amber-950/20 p-5 shadow-md shadow-amber-950/20 ring-1 ring-amber-500/25";
+    var suggestedAltTextNeutralClass = "mt-3 max-w-2xl text-base leading-relaxed text-slate-300";
+    var suggestedAltTextWarningClass =
+      "mt-3 max-w-2xl text-base leading-relaxed text-amber-100";
 
     /** Holds the Chart.js instance so we can destroy it before drawing a new one. */
     let featureChartInstance = null;
@@ -366,6 +390,9 @@
       detailHBondDonors.textContent = "—";
       detailHBondAcceptors.textContent = "—";
       detailReason.textContent = "—";
+      detailAlternative.textContent = "—";
+      if (suggestedAlternativeCard) suggestedAlternativeCard.className = suggestedAltCardNeutralClass;
+      detailAlternative.className = suggestedAltTextNeutralClass;
     }
 
     function hideStructureImage() {
@@ -509,6 +536,28 @@
       }
     }
 
+    /** Suggested alternative copy + card styling (warning if higher predicted toxicity). */
+    function updateSuggestedAlternativeCard(data) {
+      var score = Number(data.toxicity_score);
+      var toxicHighlight = Number.isFinite(score) && score > 0.6;
+
+      var alt = data.alternative;
+      if (alt !== undefined && alt !== null && String(alt).trim() !== "") {
+        detailAlternative.textContent = String(alt).trim();
+      } else {
+        detailAlternative.textContent = "—";
+      }
+
+      if (suggestedAlternativeCard) {
+        suggestedAlternativeCard.className = toxicHighlight
+          ? suggestedAltCardWarningClass
+          : suggestedAltCardNeutralClass;
+      }
+      detailAlternative.className = toxicHighlight
+        ? suggestedAltTextWarningClass
+        : suggestedAltTextNeutralClass;
+    }
+
     function getRiskInfo(score) {
       if (score < LOW_MAX) {
         return {
@@ -600,6 +649,8 @@
         setConfidenceUI(confPercent);
 
         applyPredictionDetails(data);
+
+        updateSuggestedAlternativeCard(data);
 
         updateFeatureChart(data);
 

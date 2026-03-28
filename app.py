@@ -78,6 +78,30 @@ def predict():
     )
     reason = line1 + "\n\n" + line2
 
+    # TODO: Replace with real similarity search / chemical database
+    if toxicity_score > 0.6:
+        predefined_safe = {
+            "c1ccccc1": "CCO",
+            "CCN(CC)CC": "CC(O)C",
+            "CC(=O)O": "CCO",
+        }
+        key = smiles.strip()
+        alt_smiles = predefined_safe.get(key)
+        if alt_smiles is None:
+            alt_smiles = None
+            for suffix in ("O", "C"):
+                trial_mol = Chem.MolFromSmiles(smiles + suffix)
+                if trial_mol is not None:
+                    alt_smiles = Chem.MolToSmiles(trial_mol)
+                    break
+        if alt_smiles is None:
+            alt_smiles = random.choice(["CCO", "CC(C)O", "CC(=O)O"])
+        alternative = f"Safer alternative to explore (mock): {alt_smiles}"
+    else:
+        alternative = (
+            "Compound appears safe. Similar structures can be explored."
+        )
+
     return jsonify(
         {
             "smiles": smiles,
@@ -87,6 +111,7 @@ def predict():
             "h_bond_donors": h_bond_donors,
             "h_bond_acceptors": h_bond_acceptors,
             "reason": reason,
+            "alternative": alternative,
             "structure_image": url_for("static", filename="structure.png"),
         }
     )
