@@ -125,6 +125,7 @@
             class="w-full rounded-xl border border-slate-600 bg-slate-800 px-4 py-3 text-slate-100 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30"
           />
           <button
+            type="button"
             id="predictBtn"
             class="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-6 py-3 font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -133,6 +134,19 @@
           </button>
         </div>
         <p id="message" class="mt-3 text-sm text-slate-300"></p>
+
+        <div id="structure-container" class="mt-6 flex w-full justify-center px-2 sm:px-0">
+          <div
+            class="box-border w-full max-w-full rounded-xl border border-slate-500/45 bg-slate-900/45 p-4 shadow-lg shadow-black/25 ring-1 ring-slate-700/35 sm:max-w-[400px] sm:p-5"
+          >
+            <img
+              id="structure-img"
+              src=""
+              alt="Molecular Structure"
+              class="mx-auto block h-auto w-auto max-h-[min(52vh,420px)] max-w-full object-contain"
+            />
+          </div>
+        </div>
       </div>
 
       <section class="rounded-2xl border border-slate-700 bg-slate-900 p-6">
@@ -140,8 +154,23 @@
 
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="rounded-xl border border-slate-700 bg-slate-800 p-4">
-            <p class="text-sm text-slate-300">Toxicity Score</p>
-            <p id="toxicityScore" class="mt-1 text-3xl font-bold text-white">-</p>
+            <div class="flex items-center gap-1.5">
+              <p class="text-sm text-slate-300">Toxicity Score</p>
+              <span
+                class="group relative inline-flex h-5 w-5 cursor-help items-center justify-center rounded-full border border-slate-500 text-[10px] font-bold text-slate-400"
+                tabindex="0"
+                aria-label="About toxicity score"
+              >
+                i
+                <span
+                  class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden w-56 -translate-x-1/2 rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-left text-xs font-normal leading-snug text-slate-200 shadow-lg group-hover:block group-focus:block"
+                  role="tooltip"
+                >
+                  Value from 0 to 1 from the model. Higher usually means stronger predicted toxicity concern. This demo uses placeholder scores until the real model is wired in.
+                </span>
+              </span>
+            </div>
+            <p id="toxicityScore" class="score-value mt-1 text-3xl font-bold text-white">-</p>
             <p class="mt-1 text-xs text-slate-400">Range: 0.00 to 1.00</p>
           </div>
 
@@ -151,10 +180,83 @@
           </div>
         </div>
 
+        <div class="mt-6 rounded-xl border border-slate-700 bg-slate-800/50 p-4">
+          <div class="mb-2 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-1.5">
+              <p class="text-sm font-medium text-slate-300">Confidence</p>
+              <span
+                class="group relative inline-flex h-5 w-5 cursor-help items-center justify-center rounded-full border border-slate-500 text-[10px] font-bold text-slate-400"
+                tabindex="0"
+                aria-label="About confidence"
+              >
+                i
+                <span
+                  class="pointer-events-none absolute bottom-full left-0 z-10 mb-2 hidden w-56 rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-left text-xs font-normal leading-snug text-slate-200 shadow-lg group-hover:block group-focus:block sm:left-auto sm:right-0"
+                  role="tooltip"
+                >
+                  How sure the model is about this prediction, shown as 0–100%. Here it comes from the API (mock) and will be replaced by calibrated uncertainty when the production model ships.
+                </span>
+              </span>
+            </div>
+            <p id="confidencePct" class="text-sm font-semibold tabular-nums text-cyan-200">—</p>
+          </div>
+          <div class="h-2 overflow-hidden rounded-full bg-slate-700">
+            <div
+              id="confidenceFill"
+              class="h-full w-0 rounded-full bg-gradient-to-r from-cyan-600 to-cyan-400 transition-[width] duration-500 ease-out"
+            ></div>
+          </div>
+        </div>
+
+        <div class="mt-6 rounded-xl border border-slate-600/70 bg-slate-800/35 p-5">
+          <h3 class="mb-4 text-sm font-semibold text-cyan-200">Prediction details</h3>
+          <dl class="grid gap-5 sm:grid-cols-3">
+            <div>
+              <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">Molecular weight</dt>
+              <dd id="detailMolecularWeight" class="mt-1 tabular-nums text-lg font-medium text-white">—</dd>
+              <p class="mt-0.5 text-xs text-slate-500">g/mol</p>
+            </div>
+            <div>
+              <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">H-bond donors</dt>
+              <dd id="detailHBondDonors" class="mt-1 text-lg font-medium text-white">—</dd>
+            </div>
+            <div>
+              <dt class="text-xs font-medium uppercase tracking-wide text-slate-500">H-bond acceptors</dt>
+              <dd id="detailHBondAcceptors" class="mt-1 text-lg font-medium text-white">—</dd>
+            </div>
+          </dl>
+          <div class="mt-6 border-t border-slate-700/80 pt-6">
+            <h4 class="text-sm font-semibold tracking-tight text-white">
+              Why this compound may be toxic
+            </h4>
+            <p
+              id="detailReason"
+              class="mt-3 max-w-2xl whitespace-pre-line text-base leading-7 text-slate-300"
+              role="status"
+            >
+              —
+            </p>
+          </div>
+        </div>
+
         <div class="mt-5 flex flex-wrap items-center gap-3 text-sm">
           <span class="rounded-full bg-green-500/20 px-3 py-1 text-green-300 ring-1 ring-green-400/40">Green: Low</span>
           <span class="rounded-full bg-yellow-500/20 px-3 py-1 text-yellow-300 ring-1 ring-yellow-400/40">Yellow: Medium</span>
           <span class="rounded-full bg-red-500/20 px-3 py-1 text-red-300 ring-1 ring-red-400/40">Red: High</span>
+        </div>
+
+        <div class="mt-6 rounded-xl border border-slate-700 bg-slate-800/30 p-6 sm:p-7">
+          <p class="mb-1 text-center text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Descriptor comparison
+          </p>
+          <p class="mb-5 text-center text-xs text-slate-600">Updates when you click Predict</p>
+          <div class="px-1">
+            <canvas id="featureChart" class="mx-auto max-w-full"></canvas>
+          </div>
+          <p
+            id="featureChartInterpretation"
+            class="mt-6 border-t border-slate-700/80 pt-5 text-center text-sm leading-relaxed text-slate-400"
+          ></p>
         </div>
       </section>
     </section>
@@ -174,16 +276,29 @@
     <section id="future-scope" class="scroll-mt-28 pt-16">
       <div class="rounded-2xl border border-slate-700 bg-slate-900 p-8">
         <h2 class="text-2xl font-bold text-white">Future Scope</h2>
-        <ul class="mt-6 list-inside list-disc space-y-3 text-slate-300">
+        <ul class="mt-6 list-inside list-disc space-y-4 leading-relaxed text-slate-300">
           <li>Swap the mock API for a trained model with validated metrics and uncertainty estimates.</li>
           <li>Add batch upload and structure coverage checks for SMILES parsing and edge cases.</li>
           <li>Integrate interpretability: salient substructures or pathway-linked explanations for predictions.</li>
           <li>User accounts, saved runs, and optional export of reports for lab notebooks.</li>
+          <li>
+            Integration with scientific research databases (such as PubMed and chemical literature) to provide
+            evidence-backed explanations for toxicity predictions using real-world studies.
+          </li>
+          <li>
+            An AI-driven system to suggest alternative compounds based on structural similarity—helping teams explore
+            safer options without losing the chemistry they care about.
+          </li>
+          <li>
+            Advanced explainability through substructure-level analysis: highlighting functional groups and motifs that
+            most strongly drive the model’s concern, tied to known toxicophores where possible.
+          </li>
         </ul>
       </div>
     </section>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script>
     const smilesInput = document.getElementById("smilesInput");
     const smilesPreset = document.getElementById("smilesPreset");
@@ -194,16 +309,215 @@
     const toxicityScore = document.getElementById("toxicityScore");
     const riskLabel = document.getElementById("riskLabel");
     const riskCard = document.getElementById("riskCard");
+    const confidencePct = document.getElementById("confidencePct");
+    const confidenceFill = document.getElementById("confidenceFill");
+    const detailMolecularWeight = document.getElementById("detailMolecularWeight");
+    const detailHBondDonors = document.getElementById("detailHBondDonors");
+    const detailHBondAcceptors = document.getElementById("detailHBondAcceptors");
+    const detailReason = document.getElementById("detailReason");
+
+    /** Holds the Chart.js instance so we can destroy it before drawing a new one. */
+    let featureChartInstance = null;
+
+    // Must match backend score range: 0–1. Colors: green < 0.33, yellow 0.33–0.66, red > 0.66
+    const LOW_MAX = 0.33;
+    const HIGH_MIN = 0.66;
+
+    /** Basic SMILES shape check (not chemistry-complete). */
+    function isPlausibleSmiles(s) {
+      if (s.length > 4000) return false;
+      if (/\s/.test(s)) return false;
+      if (!/^[A-Za-z0-9@+\-\[\]()=#%\\.\\\\/:]+$/.test(s)) return false;
+      var depth = 0;
+      for (var i = 0; i < s.length; i++) {
+        var c = s.charAt(i);
+        if (c === "(") depth++;
+        else if (c === ")") {
+          depth--;
+          if (depth < 0) return false;
+        }
+      }
+      if (depth !== 0) return false;
+      var b = 0;
+      for (var j = 0; j < s.length; j++) {
+        var ch = s.charAt(j);
+        if (ch === "[") b++;
+        else if (ch === "]") {
+          b--;
+          if (b < 0) return false;
+        }
+      }
+      return b === 0;
+    }
+
+    function setConfidenceUI(percent) {
+      var p = Math.max(0, Math.min(100, Math.round(percent)));
+      confidencePct.textContent = p + "%";
+      confidenceFill.style.width = p + "%";
+    }
+
+    function resetConfidenceUI() {
+      confidencePct.textContent = "—";
+      confidenceFill.style.width = "0%";
+    }
+
+    function resetPredictionDetails() {
+      detailMolecularWeight.textContent = "—";
+      detailHBondDonors.textContent = "—";
+      detailHBondAcceptors.textContent = "—";
+      detailReason.textContent = "—";
+    }
+
+    function hideStructureImage() {
+      const img = document.getElementById("structure-img");
+      if (!img) return;
+      img.removeAttribute("src");
+      img.style.display = "none";
+    }
+
+    function destroyFeatureChart() {
+      if (featureChartInstance) {
+        featureChartInstance.destroy();
+        featureChartInstance = null;
+      }
+      var interp = document.getElementById("featureChartInterpretation");
+      if (interp) interp.textContent = "";
+    }
+
+    /** Bar chart for molecular_weight, h_bond_donors, h_bond_acceptors from API JSON. */
+    function updateFeatureChart(data) {
+      if (typeof Chart === "undefined") return;
+      var canvas = document.getElementById("featureChart");
+      if (!canvas) return;
+
+      var mw = Number(data.molecular_weight);
+      var donors = Number(data.h_bond_donors);
+      var acc = Number(data.h_bond_acceptors);
+      if (!Number.isFinite(mw)) mw = 0;
+      if (!Number.isFinite(donors)) donors = 0;
+      if (!Number.isFinite(acc)) acc = 0;
+
+      destroyFeatureChart();
+
+      var interpEl = document.getElementById("featureChartInterpretation");
+      if (interpEl) {
+        interpEl.textContent =
+          "Higher molecular weight and increased hydrogen bonding capacity may influence toxicity.";
+      }
+
+      var ctx = canvas.getContext("2d");
+      featureChartInstance = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: [
+            "Molecular Weight (MW)",
+            "H-bond Donors (HBD)",
+            "H-bond Acceptors (HBA)"
+          ],
+          datasets: [
+            {
+              data: [mw, donors, acc],
+              backgroundColor: [
+                "rgba(34, 211, 238, 0.5)",
+                "rgba(167, 139, 250, 0.45)",
+                "rgba(52, 211, 153, 0.45)"
+              ],
+              borderColor: [
+                "rgba(34, 211, 238, 0.95)",
+                "rgba(196, 181, 253, 0.9)",
+                "rgba(52, 211, 153, 0.95)"
+              ],
+              borderWidth: 1.5,
+              borderRadius: 8,
+              borderSkipped: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          aspectRatio: 1.5,
+          animation: {
+            duration: 900,
+            easing: "easeOutQuart"
+          },
+          layout: {
+            padding: { top: 10, bottom: 6, left: 4, right: 4 }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              enabled: true,
+              backgroundColor: "rgba(15, 23, 42, 0.92)",
+              titleColor: "#e2e8f0",
+              bodyColor: "#cbd5e1",
+              borderColor: "rgba(51, 65, 85, 0.8)",
+              borderWidth: 1,
+              padding: 10,
+              cornerRadius: 8
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                color: "#94a3b8",
+                maxRotation: 28,
+                minRotation: 0,
+                font: { size: 11, weight: "500" },
+                padding: 10
+              },
+              grid: { display: false }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: { color: "#94a3b8", padding: 8 },
+              grid: { color: "rgba(148, 163, 184, 0.1)" },
+              border: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    function applyPredictionDetails(data) {
+      var mw = data.molecular_weight;
+      if (mw !== undefined && mw !== null && Number.isFinite(Number(mw))) {
+        detailMolecularWeight.textContent = Number(mw).toFixed(2);
+      } else {
+        detailMolecularWeight.textContent = "—";
+      }
+
+      var donors = data.h_bond_donors;
+      if (donors !== undefined && donors !== null && Number.isFinite(Number(donors))) {
+        detailHBondDonors.textContent = String(Math.round(Number(donors)));
+      } else {
+        detailHBondDonors.textContent = "—";
+      }
+
+      var acc = data.h_bond_acceptors;
+      if (acc !== undefined && acc !== null && Number.isFinite(Number(acc))) {
+        detailHBondAcceptors.textContent = String(Math.round(Number(acc)));
+      } else {
+        detailHBondAcceptors.textContent = "—";
+      }
+
+      var reason = data.reason;
+      if (reason !== undefined && reason !== null && String(reason).trim() !== "") {
+        detailReason.textContent = String(reason).trim();
+      } else {
+        detailReason.textContent = "—";
+      }
+    }
 
     function getRiskInfo(score) {
-      if (score < 0.33) {
+      if (score < LOW_MAX) {
         return {
           label: "Low",
           cardClass: "border-green-400/60 bg-green-500/10",
           textClass: "text-green-300"
         };
       }
-      if (score <= 0.66) {
+      if (score <= HIGH_MIN) {
         return {
           label: "Medium",
           cardClass: "border-yellow-400/60 bg-yellow-500/10",
@@ -221,15 +535,26 @@
       const smiles = smilesInput.value.trim();
 
       if (!smiles) {
-        message.textContent = "Please enter a SMILES string first.";
+        hideStructureImage();
+        message.textContent = "Please enter a SMILES string";
         message.className = "mt-3 text-sm text-yellow-300";
         return;
       }
 
+      if (!isPlausibleSmiles(smiles)) {
+        hideStructureImage();
+        message.textContent = "Invalid SMILES format";
+        message.className = "mt-3 text-sm text-yellow-300";
+        return;
+      }
+
+      hideStructureImage();
+
       predictBtn.disabled = true;
       btnSpinner.classList.remove("hidden");
-      btnText.textContent = "Predicting...";
-      message.textContent = "";
+      btnText.textContent = "Analyzing...";
+      message.textContent = "Analyzing compound...";
+      message.className = "mt-3 text-sm text-cyan-300";
 
       try {
         const response = await fetch("/predict", {
@@ -238,25 +563,66 @@
           body: JSON.stringify({ smiles })
         });
 
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch {
+          throw new Error("Server did not return JSON.");
+        }
+
+        console.log(data);
 
         if (!response.ok) {
           throw new Error(data.error || "Prediction failed.");
         }
 
         const score = Number(data.toxicity_score);
+        if (!Number.isFinite(score)) {
+          throw new Error("Invalid toxicity_score in response.");
+        }
+
+        var confRaw = data.confidence;
+        var conf = confRaw !== undefined && confRaw !== null ? Number(confRaw) : NaN;
+        if (!Number.isFinite(conf)) {
+          conf = 0.85;
+        }
+        var confPercent = conf <= 1 ? conf * 100 : conf;
+
         const risk = getRiskInfo(score);
 
         toxicityScore.textContent = score.toFixed(4);
+        toxicityScore.className =
+          "score-value mt-1 text-3xl font-bold " + risk.textClass;
         riskLabel.textContent = risk.label;
         riskLabel.className = "mt-1 text-2xl font-bold " + risk.textClass;
         riskCard.className = "rounded-xl border p-4 " + risk.cardClass;
 
+        setConfidenceUI(confPercent);
+
+        applyPredictionDetails(data);
+
+        updateFeatureChart(data);
+
+        const img = document.getElementById("structure-img");
+        if (!data.structure_image) {
+          if (img) {
+            img.removeAttribute("src");
+            img.style.display = "none";
+          }
+        } else if (img) {
+          img.src = data.structure_image + "?t=" + new Date().getTime();
+          img.style.display = "block";
+        }
+
         message.textContent = "Prediction completed successfully.";
         message.className = "mt-3 text-sm text-cyan-300";
       } catch (error) {
+        hideStructureImage();
+        destroyFeatureChart();
         message.textContent = error.message;
         message.className = "mt-3 text-sm text-red-300";
+        resetConfidenceUI();
+        resetPredictionDetails();
       } finally {
         predictBtn.disabled = false;
         btnSpinner.classList.add("hidden");
@@ -278,6 +644,8 @@
     });
 
     predictBtn.addEventListener("click", predictToxicity);
+
+    hideStructureImage();
 
     // Smooth scroll for nav (works with keyboard and consistent behavior across browsers)
     document.querySelectorAll(".nav-link").forEach(function (link) {
