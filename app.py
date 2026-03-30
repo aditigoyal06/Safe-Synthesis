@@ -1,16 +1,39 @@
 import random
 from pathlib import Path
+import os
+import glob
 
 from flask import Flask, jsonify, render_template, request, url_for
 from rdkit import Chem
 from rdkit.Chem import Draw
+import joblib
+from rdkit import Chem
+from rdkit.Chem import Descriptors
 
-app = Flask(__name__)
-
+# 1. Setup Paths
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
-STRUCTURE_IMAGE_PATH = STATIC_DIR / "structure.png"
+STATIC_DIR.mkdir(exist_ok=True)
 
+def cleanup_static():
+    """Deletes all structure images from the static folder on startup."""
+    files = glob.glob(str(STATIC_DIR / "structure_*.png"))
+    for f in files:
+        try:
+            os.remove(f)
+        except Exception as e:
+            print(f"Error deleting file {f}: {e}")
+
+# Run the cleanup before the app starts
+cleanup_static()
+
+# 3. Load the trained model
+saved_data = joblib.load("model/random_forest_model.joblib")
+# Extract the actual model and the threshold
+model = saved_data['model']
+threshold = saved_data.get('optimal_threshold', 0.27)
+
+app = Flask(__name__)
 
 @app.route("/")
 def home():
@@ -32,18 +55,35 @@ def predict():
     if mol is None:
         return jsonify({"error": "Invalid SMILES string"}), 400
 
-    STATIC_DIR.mkdir(exist_ok=True)
-    # TODO: Improve image handling (unique filenames, cleanup)
-    Draw.MolToFile(mol, str(STRUCTURE_IMAGE_PATH))
+    import time
+    # 1. Create the filename and save the image
+    img_filename = f"structure_{int(time.time())}.png"
+    img_path = STATIC_DIR / img_filename
+    Draw.MolToFile(mol, str(img_path))
 
-    # TODO: Replace mock values with real ML model + RDKit descriptors
-    toxicity_score = round(random.uniform(0, 1), 4)
-    confidence = random.randint(70, 95)
-    molecular_weight = round(random.uniform(100, 500), 2)
-    h_bond_donors = random.randint(0, 5)
-    h_bond_acceptors = random.randint(0, 10)
+    # Extract molecular descriptors (same as training)
+    molecular_weight = Descriptors.MolWt(mol)
+    logp = Descriptors.MolLogP(mol)
+    h_bond_donors = Descriptors.NumHDonors(mol)
+    h_bond_acceptors = Descriptors.NumHAcceptors(mol)
+    tpsa = Descriptors.TPSA(mol)
+    num_atoms = mol.GetNumAtoms()
 
-    # Simulated research-based explanation (mock)
+    # Create feature list (IMPORTANT: same order as training)
+    features = [
+        molecular_weight,
+        logp,
+        h_bond_donors,
+        h_bond_acceptors,
+        tpsa,
+        num_atoms
+    ]
+
+    # Use the loaded model to make a prediction
+    toxicity_score = model.predict_proba([features])[0][1]  # Probability of being toxic
+    confidence = int(toxicity_score*100) if toxicity_score >= threshold else int((1 - toxicity_score)*100)
+
+    # Simulated research-based explanation based on descriptors and toxicity score
     size_phrase = (
         "a relatively compact molecular framework"
         if molecular_weight < 280
@@ -78,7 +118,6 @@ def predict():
     )
     reason = line1 + "\n\n" + line2
 
-    # TODO: Replace with real similarity search / chemical database
     if toxicity_score > 0.6:
         predefined_safe = {
             "c1ccccc1": "CCO",
@@ -96,9 +135,9 @@ def predict():
                     break
         if alt_smiles is None:
             alt_smiles = random.choice(["CCO", "CC(C)O", "CC(=O)O"])
-        alternative = f"Safer alternative to explore (mock): {alt_smiles}"
+        suggested_analog = f"Safer alternative to explore (mock): {alt_smiles}"
     else:
-        alternative = (
+        suggested_analog = (
             "Compound appears safe. Similar structures can be explored."
         )
 
@@ -111,8 +150,8 @@ def predict():
             "h_bond_donors": h_bond_donors,
             "h_bond_acceptors": h_bond_acceptors,
             "reason": reason,
-            "alternative": alternative,
-            "structure_image": url_for("static", filename="structure.png"),
+            "suggested_analog": suggested_analog,
+            "structure_image": url_for("static", filename=img_filename),
         }
     )
 
