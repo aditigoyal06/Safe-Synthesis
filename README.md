@@ -93,14 +93,14 @@ Extracted interpretable molecular descriptors:
 
 ---
 
-### 🤖 Model Training
+###  Model Training
 
 * Algorithm: **Random Forest Classifier**
 * Train/Test Split: 80/20
 
 ---
 
-### 📈 Model Optimization
+###  Model Optimization
 
 * Initial issue: low recall (~0.38)
 * Applied:
@@ -264,4 +264,4 @@ This project was developed with guidance, self-learning, and AI-assisted tools t
 
 ---
 
-⭐ If you found this project useful, consider giving it a star!
+ If you found this project useful, consider giving it a star!
