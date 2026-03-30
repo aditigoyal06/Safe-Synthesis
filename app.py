@@ -144,7 +144,7 @@ def predict():
     return jsonify(
         {
             "smiles": smiles,
-            "toxicity_score": toxicity_score,
+            "toxicity_score": round(float(toxicity_score), 4),
             "confidence": confidence,
             "molecular_weight": molecular_weight,
             "h_bond_donors": h_bond_donors,
